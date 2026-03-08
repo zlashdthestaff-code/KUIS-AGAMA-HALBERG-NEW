@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Master Agama XII - SMK Negeri 1 Tanjungpinang</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #c0392b; --success: #27ae60; --accent: #2980b9; --bg: #f0f2f5; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 10px; }
+        .container { max-width: 850px; margin: 20px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; border-bottom: 4px solid var(--secondary); padding-bottom: 10px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .metadata { display: flex; justify-content: space-between; font-size: 0.85em; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--accent); }
+        
+        /* Study Mode Style */
+        .study-box { background: #eef7ff; border: 1px solid #b3d7ff; padding: 20px; border-radius: 10px; margin-bottom: 25px; display: none; }
+        .study-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .study-header h3 { margin: 0; color: var(--accent); }
+        
+        .question-text { font-size: 1.2em; font-weight: 600; line-height: 1.5; margin-bottom: 20px; }
+        .options { display: grid; gap: 12px; }
+        button.option { padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; text-align: left; transition: 0.3s; font-size: 1em; }
+        button.option:hover:not([disabled]) { border-color: var(--accent); background: #f0f8ff; }
+        button.option.correct { background: var(--success) !important; color: white; border-color: var(--success); }
+        button.option.wrong { background: var(--secondary) !important; color: white; border-color: var(--secondary); }
+        
+        /* Explanation Style */
+        .explanation { margin-top: 20px; padding: 15px; background: #f1f9f1; border-left: 5px solid var(--success); display: none; animation: slideDown 0.4s; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Toggle Button Style */
+        .btn-toggle { background: #d1e7ff; border: 1px solid #a7c5eb; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.8em; font-weight: 600; color: #2980b9; transition: 0.2s; }
+        .btn-toggle:hover { background: #b3d7ff; }
+
+        .controls { margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-next { background: var(--primary); color: white; }
+        .btn-study { background: var(--accent); color: white; }
+        
+        #result-screen { display: none; text-align: center; }
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; border: 10px solid var(--success); display: flex; align-items: center; justify-content: center; font-size: 3em; font-weight: bold; margin: 20px auto; color: var(--success); }
+        .progress-bar { width: 100%; height: 10px; background: #eee; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
+        #progress-fill { height: 100%; background: var(--secondary); width: 0%; transition: 0.4s; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>UAS Agama</h1>
+    <div class="metadata">
+        <span>SMKN 1 TANJUNGPINANG</span>
+        <span id="pos-info">Materi 1/40</span>
+    </div>
+
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+
+    <div id="study-screen" class="study-box">
+        <div class="study-header">
+            <h3 id="study-title">Penjelasan Materi</h3>
+            <button class="btn-toggle" id="study-toggle-btn" onclick="toggleStudyContent()">Sembunyikan Materi</button>
+        </div>
+        <p id="study-content"></p>
+        <button class="btn btn-study" onclick="startQuestion()">Saya Paham, Lanjut ke Soal</button>
+    </div>
+
+    <div id="quiz-screen" style="display:none;">
+        <div class="question-text" id="q-text"></div>
+        <div class="options" id="opt-container"></div>
+        
+        <div class="explanation" id="ex-box">
+            <strong>💡 Pembahasan:</strong> <span id="ex-text"></span>
+        </div>
+
+        <div class="controls">
+            <span>Level: <b id="lvl-info"></b></span>
+            <button class="btn btn-next" id="next-btn" onclick="nextStep()" style="visibility:hidden;">Selanjutnya &raquo;</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>Ujian Selesai!</h2>
+        <div class="score-circle" id="final-score">0</div>
+        <p id="final-comment"></p>
+        <button class="btn btn-next" onclick="location.reload()">Ulangi Ujian</button>
+    </div>
+</div>
+
+<script>
+const bankSoal = [
+    // BAGIAN 1
+    {
+        materi: "Tujuan Hidup Umat Buddha",
+        penjelasan: "Tujuan tertinggi adalah Nibbana, yaitu pembebasan dari penderitaan dan kekotoran batin.",
+        soal: [
+            { 
+                q: "Berdasarkan ajaran Buddha, apakah tujuan akhir yang ingin dicapai untuk membebaskan diri dari penderitaan?", 
+                a: "Mencapai Nibbana (Kebebasan Mutlak)", 
+                ex: "Nibbana adalah tujuan utama yang berarti terbebas dari kondisi dan tiga akar kejahatan.", 
+                o: ["Menjadi kaya raya", "Mencapai Nibbana (Kebebasan Mutlak)", "Menjadi raja dunia", "Hidup kekal di bumi", "Mendapat kesaktian"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Kebuddhaan dapat dicapai oleh siapa saja yang melatih diri. Hal ini menunjukkan bahwa tujuan hidup dalam agama Buddha adalah...", 
+                a: "Setiap orang dapat menjadi Buddha melalui usaha sendiri", 
+                ex: "Kebuddhaan bukan milik pribadi Siddharta Gotama, tetapi setiap orang memiliki potensi tersebut.", 
+                o: ["Hanya untuk kaum kasta tinggi", "Hanya untuk para dewa", "Setiap orang dapat menjadi Buddha melalui usaha sendiri", "Ditentukan oleh takdir", "Hanya bisa dicapai setelah mati"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Tujuan hidup umat Buddha dicapai dengan cara memadamkan tiga akar kejahatan, yaitu...", 
+                a: "Lobha (Keserakahan), Dosa (Kebencian), dan Moha (Kebodohan)", 
+                ex: "Nibbana berarti terbebas dari lobha, dosa, dan moha.", 
+                o: ["Sila, Samadhi, dan Panna", "Hiri, Ottappa, dan Saddha", "Lobha (Keserakahan), Dosa (Kebencian), dan Moha (Kebodohan)", "Anicca, Dukkha, dan Anatta", "Lahir, Tua, dan Mati"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Pancaniyama",
+        penjelasan: "Lima hukum tertib kosmis yang mengatur alam semesta.",
+        soal: [
+            { 
+                q: "Hukum yang mengatur tentang keteraturan cuaca, pergantian musim, dan hancurnya tata surya disebut...", 
+                a: "Utuniyama (Hukum Fisika)", 
+                ex: "Utuniyama mengatur terbentuk dan hancurnya tata surya beserta isinya.", 
+                o: ["Bijaniyama", "Kammaniyama", "Cittaniyama", "Utuniyama (Hukum Fisika)", "Dhammaniyama"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Proses tumbuhnya buah mangga dari pohon mangga diatur oleh hukum kosmis...", 
+                a: "Bijaniyama (Hukum Biologi)", 
+                ex: "Bijaniyama adalah hukum yang berkaitan dengan tumbuh-tumbuhan.", 
+                o: ["Utuniyama", "Bijaniyama (Hukum Biologi)", "Kammaniyama", "Cittaniyama", "Dhammaniyama"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Hukum yang mengatur hal khusus seperti fenomena saat lahirnya seorang Boddhisattva adalah...", 
+                a: "Dhammaniyama (Hukum Spiritual)", 
+                ex: "Dhammaniyama berkaitan dengan kejadian khusus seperti lahirnya Boddhisattva.", 
+                o: ["Cittaniyama", "Utuniyama", "Kammaniyama", "Bijaniyama", "Dhammaniyama (Hukum Spiritual)"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Kesenian Buddhis",
+        penjelasan: "Pemanfaatan seni untuk menyampaikan ajaran Dharma.",
+        soal: [
+            { 
+                q: "Karya seni stupa di Candi Borobudur memiliki makna sebagai...", 
+                a: "Replika dari alam semesta", 
+                ex: "Stupa merupakan hasil karya rupa yang merupakan replika dari alam semesta.", 
+                o: ["Tempat pemakaman raja", "Replika dari alam semesta", "Gudang penyimpanan emas", "Benteng pertahanan", "Penyangga bukit"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Relief pada dinding candi dalam kesenian Buddhis berfungsi untuk...", 
+                a: "Menyampaikan pesan keagamaan melalui gambar", 
+                ex: "Relief menceritakan perjalanan hidup manusia dan ajaran keagamaan.", 
+                o: ["Menunjukkan kekayaan raja", "Menyampaikan pesan keagamaan melalui gambar", "Penahan air hujan", "Hiasan dinding tanpa makna", "Tempat memahat nama"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Seni tari dalam konteks Buddhis di Indonesia sering ditampilkan pada acara...", 
+                a: "Dharmasanti Waisak", 
+                ex: "Seni tari Buddhis sering dimunculkan dalam kegiatan perayaan Dharmasanti Waisak.", 
+                o: ["Dharmasanti Waisak", "Pesta perkebunan", "Upacara kenegaraan", "Penyambutan musim kemarau", "Lomba lari maraton"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Alam Semesta: Nama dan Rupa",
+        penjelasan: "Loka terdiri dari Nama (Batin) dan Rupa (Jasmani).",
+        soal: [
+            { 
+                q: "Dalam unsur Nama (Batin), kemampuan untuk merasakan kebahagiaan atau kesedihan disebut...", 
+                a: "Vedana (Perasaan)", 
+                ex: "Vedana adalah menggunakan indera batin untuk merasakan sesuatu.", 
+                o: ["Sanna", "Sankhara", "Vedana (Perasaan)", "Vinnana", "Tejo"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Elemen jasmani yang mewakili suhu tubuh manusia dalam unsur Rupa disebut unsur...", 
+                a: "Tejo (Api)", 
+                ex: "Tejo mewakili suhu tubuh manusia.", 
+                o: ["Pathavi (Tanah)", "Apo (Air)", "Tejo (Api)", "Vayo (Udara)", "Sanna (Pencerapan)"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Halberg teringat belum mandi setelah melihat kamar mandi. Fungsi batin ini disebut...", 
+                a: "Sanna (Pencerapan)", 
+                ex: "Sanna adalah menggunakan indera batin untuk teringat atau mengingat sesuatu.", 
+                o: ["Vedana", "Sanna (Pencerapan)", "Sankhara", "Vinnana", "Apo"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Alam Kehidupan (Dugati & Sugati)",
+        penjelasan: "Alam penderitaan dan alam menyenangkan dalam 31 alam.",
+        soal: [
+            { 
+                q: "Makhluk yang terlahir di alam binatang (Tiracchana) disebabkan perbuatan lampau yang didasari...", 
+                a: "Moha (Kebodohan)", 
+                ex: "Makhluk lahir sebagai binatang karena perbuatan berdasarkan kebodohan (moha).", 
+                o: ["Lobha (Keserakahan)", "Dosa (Kebencian)", "Moha (Kebodohan)", "Metta (Cinta Kasih)", "Saddha (Keyakinan)"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Kelompok binatang yang tidak memiliki kaki seperti ular dan ikan disebut...", 
+                a: "Apadatiracchana", 
+                ex: "Apadatiracchana adalah kelompok binatang tidak memiliki kaki.", 
+                o: ["Apadatiracchana", "Dvipadatiracchana", "Catupadatiracchana", "Bahupaddatiracchana", "Peta Asura"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Apa penyebab utama makhluk terlahir di alam Asura (Raksasa)?", 
+                a: "Lobha (Keserakahan)", 
+                ex: "Penyebab lahir di alam Asura adalah perbuatan yang penuh keserakahan (lobha).", 
+                o: ["Moha (Kebodohan)", "Lobha (Keserakahan)", "Dosa (Kebencian)", "Saddha (Keyakinan)", "Kedermawanan"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Ragam Agama/Macam Agama",
+        penjelasan: "Eksistensi dan sikap terhadap keragaman agama di Indonesia.",
+        soal: [
+            { 
+                q: "Sikap keberagamaan yang menghormati dan menciptakan kedamaian tanpa konflik disebut...", 
+                a: "Pluralisme", 
+                ex: "Pluralisme diartikan sebagai sikap saling menghormati sehingga tercipta kedamaian.", 
+                o: ["Eksklusivisme", "Pluralisme", "Eklektivisme", "Inklusivisme", "Universalisme"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Berapa jumlah agama yang secara resmi diakui oleh pemerintah Indonesia saat ini?", 
+                a: "Enam", 
+                ex: "Terdapat enam agama besar yang diakui sah: Islam, Kristen, Katolik, Hindu, Buddha, dan Khonghucu.", 
+                o: ["Tiga", "Empat", "Lima", "Enam", "Tujuh"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Paham yang menolak adanya kebenaran dari agama lain dan hanya membenarkan agama sendiri disebut...", 
+                a: "Eksklusivisme", 
+                ex: "Eksklusivist menganggap tidak ada jalan lain menuju kebenaran selain agamanya.", 
+                o: ["Pluralisme", "Inklusivisme", "Eksklusivisme", "Eklektivisme", "Paralelisme"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Karma",
+        penjelasan: "Penyebab dan proses kerja Kamma.",
+        soal: [
+            { 
+                q: "Suatu perbuatan disebut Karma jika perbuatan tersebut disertai dengan...", 
+                a: "Cetana (Kehendak/Niat)", 
+                ex: "Karma adalah perbuatan yang disertai dengan kehendak (cetana).", 
+                o: ["Hasil yang besar", "Pujian orang lain", "Cetana (Kehendak/Niat)", "Tenaga yang kuat", "Kesaktian batin"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Karma yang memberikan hasil dalam kehidupan sekarang sebelum meninggal disebut...", 
+                a: "Ditthadhammavedaniya Kamma", 
+                ex: "Karma yang hasilnya diterima pada kehidupan sekarang.", 
+                o: ["Uppajjavedaniya Kamma", "Aparaparavedaniya Kamma", "Ahosi Kamma", "Ditthadhammavedaniya Kamma", "Garuka Kamma"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Analogi kerja hukum karma menurut catatanmu adalah seperti...", 
+                a: "Rekening Bank", 
+                ex: "Kerja hukum karma dapat diibaratkan seperti rekening bank.", 
+                o: ["Roda pedati", "Rekening Bank", "Pohon berbuah", "Air mengalir", "Lampu pijar"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Kamma Menurut Fungsi",
+        penjelasan: "Peranan Kamma dalam menentukan nasib makhluk.",
+        soal: [
+            { 
+                q: "Kamma yang berfungsi menyebabkan kelahiran suatu makhluk sesuai macamnya disebut...", 
+                a: "Janaka Kamma", 
+                ex: "Janaka Kamma berfungsi menyebabkan kelahiran suatu makhluk.", 
+                o: ["Upatthambhaka Kamma", "Janaka Kamma", "Uppapilaka Kamma", "Upaghataka Kamma", "Ahosi Kamma"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Budi lahir di keluarga bahagia. Jika ia terus berbuat baik, perbuatannya disebut...", 
+                a: "Upatthambhaka Kamma (Kamma Penguat)", 
+                ex: "Kamma penguat berfungsi memperkuat apa yang dihasilkan Janaka Kamma.", 
+                o: ["Janaka Kamma", "Uppapilaka Kamma", "Upatthambhaka Kamma (Kamma Penguat)", "Upaghataka Kamma", "Garuka Kamma"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Kamma yang berfungsi menghancurkan kamma yang telah ada (seperti kasus Dewadatta) disebut...", 
+                a: "Upaghataka Kamma (Kamma Penghancur)", 
+                ex: "Upaghataka Kamma berfungsi menghancurkan kamma yang telah ada.", 
+                o: ["Janaka Kamma", "Upatthambhaka Kamma", "Uppapilaka Kamma", "Upaghataka Kamma (Kamma Penghancur)", "Ahosi Kamma"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Penyebab Menjadi Manusia",
+        penjelasan: "Faktor moral kelahiran di alam manusia.",
+        soal: [
+            { 
+                q: "Makhluk lahir di alam manusia karena di kehidupan lampau mereka banyak melakukan...", 
+                a: "Kebajikan", 
+                ex: "Makhluk lahir di alam manusia karena di kehidupan lampau banyak melakukan kebajikan.", 
+                o: ["Kejahatan", "Kesaktian", "Kebajikan", "Meditasi berat", "Ritual hewan"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Sebab kelahiran di alam manusia melalui rahim disebut dengan istilah...", 
+                a: "Jalabuja-yoni", 
+                ex: "Jalabuja-yoni adalah makhluk yang lahir melalui kandungan (manusia).", 
+                o: ["Andaja-yoni", "Sansedaja-yoni", "Opapatika-yoni", "Jalabuja-yoni", "Niraya-yoni"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Kualitas alam manusia menurut Buddha adalah campuran antara...", 
+                a: "Menyenangkan dan menyedihkan", 
+                ex: "Alam Manusia merupakan alam campuran antara keadaan menyenangkan dan menyedihkan.", 
+                o: ["Hanya penderitaan", "Hanya kesenangan", "Menyenangkan dan menyedihkan", "Kebencian dan dendam", "Kekosongan total"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Jalan Tengah (Majjhimapatipada)",
+        penjelasan: "Jalan antara pemuasan nafsu dan penyiksaan diri.",
+        soal: [
+            { 
+                q: "Jalan Tengah (Majjhimapatipada) diajarkan untuk menghindari ekstrim pemuasan nafsu dan...", 
+                a: "Ekstrim menyiksa diri sendiri", 
+                ex: "Jalan tengah menghindari pemuasan nafsu indriya dan menyiksa diri.", 
+                o: ["Ekstrim kekayaan", "Ekstrim menyiksa diri sendiri", "Ekstrim kemiskinan", "Ekstrim kebodohan", "Ekstrim kematian"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Alasan mengapa menyiksa diri harus dihindari adalah karena...", 
+                a: "Merupakan ekstrim yang tidak membawa kebahagiaan sejati", 
+                ex: "Dua jalan ekstrim ini harus dihindari oleh pencari kebenaran.", 
+                o: ["Karena dilarang pemerintah", "Karena membuang waktu", "Merupakan ekstrim yang tidak membawa kebahagiaan sejati", "Karena membuat badan kotor", "Karena memerlukan biaya mahal"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Tujuan utama mengikuti Jalan Tengah adalah untuk merealisasikan...", 
+                a: "Nibbana", 
+                ex: "Jalan Mulia Berunsur Delapan adalah satu-satunya jalan merealisasikan Nibbana.", 
+                o: ["Kesaktian", "Surga", "Nibbana", "Kekayaan", "Umur panjang"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Jalan Mulia Berunsur 8: Panna (Kebijaksanaan)",
+        penjelasan: "Pengertian dan Pikiran Benar.",
+        soal: [
+            { 
+                q: "Unsur Jalan Mulia yang memahami Empat Kesunyataan Mulia disebut...", 
+                a: "Pengertian Benar (Samma Ditthi)", 
+                ex: "Pengertian benar adalah pengertian yang dapat memahami Empat Kesunyataan Mulia.", 
+                o: ["Pikiran Benar", "Ucapan Benar", "Pengertian Benar (Samma Ditthi)", "Usaha Benar", "Perhatian Benar"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Pikiran yang bebas dari keserakahan dan kebencian disebut dengan...", 
+                a: "Pikiran Benar (Samma Sankappa)", 
+                ex: "Pikiran benar adalah pikiran yang bebas dari keserakahan dan kebencian.", 
+                o: ["Pikiran Benar (Samma Sankappa)", "Pengertian Benar", "Ucapan Benar", "Usaha Benar", "Perhatian Benar"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Memahami Hukum Karma dan Tilakkhana merupakan bagian dari...", 
+                a: "Pengertian Benar", 
+                ex: "Pengertian benar memahami hukum karma dan tiga corak umum (Tilakkhana).", 
+                o: ["Pikiran Benar", "Pengertian Benar", "Usaha Benar", "Perhatian Benar", "Sila"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Jalan Mulia Berunsur 8: Sila (Moralitas)",
+        penjelasan: "Ucapan, Perbuatan, dan Mata Pencaharian Benar.",
+        soal: [
+            { 
+                q: "Menghindari kata-kata kasar, fitnah, dan omong kosong merupakan unsur...", 
+                a: "Ucapan Benar (Samma Vacca)", 
+                ex: "Ucapan benar menghindari berdusta, menfitnah, bicara kasar, dan omong kosong.", 
+                o: ["Pikiran Benar", "Ucapan Benar (Samma Vacca)", "Perhatian Benar", "Konsentrasi Benar", "Usaha Benar"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Berdagang minuman keras dan racun dilarang karena bertentangan dengan unsur...", 
+                a: "Mata Pencaharian Benar (Samma Ajiva)", 
+                ex: "Dilarang 5 jenis perdagangan termasuk minuman keras dan racun dalam mata pencaharian benar.", 
+                o: ["Ucapan Benar", "Perbuatan Benar", "Mata Pencaharian Benar (Samma Ajiva)", "Usaha Benar", "Pikiran Benar"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Suatu ucapan dikatakan benar jika bermanfaat dan...", 
+                a: "Tepat pada waktunya", 
+                ex: "Ucapan benar harus bermanfaat dan tepat pada waktunya.", 
+                o: ["Bernada tinggi", "Menyenangkan semua orang", "Tepat pada waktunya", "Singkat saja", "Disertai tawa"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Jalan Mulia Berunsur 8: Samadhi (Latihan Mental)",
+        penjelasan: "Usaha, Perhatian, dan Konsentrasi Benar.",
+        soal: [
+            { 
+                q: "Mencegah munculnya pikiran jahat yang belum muncul merupakan bagian dari...", 
+                a: "Daya Upaya/Usaha Benar (Samma Vayama)", 
+                ex: "Usaha benar berarti mengerahkan kemauan untuk mencegah munculnya pikiran jahat.", 
+                o: ["Pikiran Benar", "Perhatian Benar", "Daya Upaya/Usaha Benar (Samma Vayama)", "Konsentrasi Benar", "Pengertian Benar"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Perenungan terhadap perasaan (senang/sedih) dalam Perhatian Benar disebut...", 
+                a: "Vedananupassana", 
+                ex: "Vedananupassana adalah perhatian yang didasarkan pada perenungan terhadap perasaan.", 
+                o: ["Kayanupassana", "Vedananupassana", "Cittanupassana", "Dhammanupassana", "Samma Ajiva"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Memusatkan pikiran pada satu objek untuk menghilangkan kekotoran batin disebut...", 
+                a: "Samma Samadhi (Meditasi Benar)", 
+                ex: "Samma Samadhi adalah memusatkan pikiran pada salah satu objek untuk menghilangkan kekotoran batin.", 
+                o: ["Miccha Samadhi", "Samma Samadhi (Meditasi Benar)", "Samma Vayama", "Samma Sati", "Samma Ditthi"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Kelompok Samadhi, Panna, dan Sila",
+        penjelasan: "Pengelompokan 8 unsur Jalan Mulia.",
+        soal: [
+            { 
+                q: "Unsur Usaha Benar, Perhatian Benar, dan Konsentrasi Benar masuk dalam kelompok...", 
+                a: "Samadhi", 
+                ex: "Kelompok Samadhi terdiri dari Usaha Benar, Perhatian Benar, dan Konsentrasi Benar.", 
+                o: ["Sila", "Panna", "Samadhi", "Karma", "Nibbana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Unsur Pengertian Benar dan Pikiran Benar masuk ke dalam kelompok...", 
+                a: "Panna", 
+                ex: "Panna terdiri atas Pengertian Benar dan Pikiran Benar.", 
+                o: ["Sila", "Panna", "Samadhi", "Metta", "Bhavana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Untuk mencapai Nibbana, seseorang mula-mula harus mengembangkan...", 
+                a: "Moralitas (Sila)", 
+                ex: "Mula-mula seseorang harus mengembangkan moralitas (sila).", 
+                o: ["Kekayaan", "Kesaktian", "Moralitas (Sila)", "Kecerdasan otak", "Kekuatan fisik"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Tilakkhana: Anicca",
+        penjelasan: "Ketidakkekalan segala sesuatu.",
+        soal: [
+            { 
+                q: "Arti dari 'Sabbe Sankhara Anicca' adalah segala sesuatu yang terbentuk adalah...", 
+                a: "Tidak kekal", 
+                ex: "Segala sesuatu yang terbentuk dan bersyarat adalah tidak kekal.", 
+                o: ["Penderitaan", "Tidak kekal", "Tanpa inti", "Kekal abadi", "Milik pribadi"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Ketidakkekalan terdiri atas tiga rangkaian yaitu Uppada, Thiti, dan Bhanga. Bhanga berarti...", 
+                a: "Laba/Lenyap", 
+                ex: "Tiga rangkaian yaitu Uppada (timbul), thiti (berlangsung) dan bhanga (lenyap).", 
+                o: ["Timbul", "Berlangsung", "Laba/Lenyap", "Berubah", "Lahir"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Kehidupan dimulai dari lahir (Uppada), menjadi besar (Thiti) dan akhirnya...", 
+                a: "Mati (Bhanga)", 
+                ex: "Kehidupan selalu dimulai dari kelahiran (uppada), menjadi besar (thiti) dan akhirnya mati (bhanga).", 
+                o: ["Surga", "Nirvana", "Mati (Bhanga)", "Kekal", "Sakit"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Tilakkhana: Dukkha",
+        penjelasan: "Ketidakpuasan akibat perubahan.",
+        soal: [
+            { 
+                q: "Dukkha yang dirasakan secara fisik atau batin seperti sakit dan sedih disebut...", 
+                a: "Dukkha-dukkha", 
+                ex: "Dukkha-dukkha adalah dukkha biasa yang dirasakan fisik atau batin.", 
+                o: ["Viparinama dukkha", "Sankhara dukkha", "Dukkha-dukkha", "Anicca dukkha", "Anatta dukkha"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Dukkha yang muncul karena perubahan (misal: baju pudar, tertawa lalu menangis) disebut...", 
+                a: "Viparinama dukkha", 
+                ex: "Viparinama dukkha adalah akibat dari keadaan yang selalu berubah.", 
+                o: ["Dukkha-dukkha", "Viparinama dukkha", "Sankhara dukkha", "Tanha dukkha", "Moha dukkha"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Segala sesuatu yang berubah mengakibatkan ketidakpuasan. Ini adalah ciri...", 
+                a: "Dukkha Lakkhana", 
+                ex: "Segala sesuatu yang tidak memuaskan tercengkeram oleh dukkha.", 
+                o: ["Anicca Lakkhana", "Anatta Lakkhana", "Dukkha Lakkhana", "Karma Lakkhana", "Bhava Lakkhana"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Tilakkhana: Anatta",
+        penjelasan: "Tanpa inti kekal.",
+        soal: [
+            { 
+                q: "Arti dari 'Sabbe Dhamma Anatta' adalah segala sesuatu adalah...", 
+                a: "Tanpa inti/Tanpa aku", 
+                ex: "Segala sesuatu adalah tanpa inti, tidak memiliki pribadi yang kekal.", 
+                o: ["Sangat menderita", "Selalu berubah", "Tanpa inti/Tanpa aku", "Milik Tuhan", "Pasti mati"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Dalam proses melihat, tidak ada 'inti' yang berdiri sendiri karena memerlukan mata, objek, cahaya, dan...", 
+                a: "Perhatian", 
+                ex: "Kita tidak dapat melihat jika tidak ada unsur objek, cahaya, dan juga perhatian.", 
+                o: ["Kekuatan batin", "Kesehatan", "Perhatian", "Keinginan", "Kebencian"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Segala sesuatu terjadi karena sebab dan kondisi yang saling melengkapi, ini membuktikan ciri...", 
+                a: "Anatta (Tanpa inti)", 
+                ex: "Semuanya tanpa inti karena terjadi berdasarkan sebab dan kondisi.", 
+                o: ["Anicca", "Dukkha", "Anatta (Tanpa inti)", "Lobha", "Avijja"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Kesunyataan (Cattari Ariya Saccani)",
+        penjelasan: "Empat Kebenaran Mulia.",
+        soal: [
+            { 
+                q: "Hukum yang berlaku di mana saja, kapan saja, dan terhadap siapa saja disebut...", 
+                a: "Hukum Kesunyataan", 
+                ex: "Hukum Kesunyataan berlaku di mana saja, kapan saja, dan terhadap siapa saja.", 
+                o: ["Hukum Negara", "Hukum Adat", "Hukum Kesunyataan", "Hukum Karma", "Hukum Sosial"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Asal mula dukkha atau sebab penderitaan dalam Kesunyataan Kedua adalah...", 
+                a: "Tanha (Keinginan) dan Avijja (Kebodohan)", 
+                ex: "Asal mula dukkha adalah tanha dan avijja.", 
+                o: ["Kekayaan", "Nasib buruk", "Tanha (Keinginan) dan Avijja (Kebodohan)", "Kemiskinan", "Kematian"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Lenyapnya dukkha berarti tercapainya kebebasan mutlak yang disebut...", 
+                a: "Nibbana", 
+                ex: "Lenyapnya dukkha berarti tercapainya kebebasan mutlak yang disebut Nibbana.", 
+                o: ["Surga", "Nibbana", "Kekayaan", "Kesaktian", "Kelahiran kembali"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Dukkha Ariya Sacca",
+        penjelasan: "Kebenaran tentang penderitaan.",
+        soal: [
+            { 
+                q: "Buddha merumuskan penderitaan sebagai berikut: lahir, tua, dan...", 
+                a: "Mati", 
+                ex: "Kelahiran, usia tua, dan kematian adalah dukkha.", 
+                o: ["Sakit", "Sedih", "Mati", "Lapar", "Marah"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Berkumpul dengan orang yang dibenci dan berpisah dengan yang dicintai adalah...", 
+                a: "Dukkha", 
+                ex: "Berpisah dengan yang dicintai, berkumpul dengan yang dibenci adalah dukkha.", 
+                o: ["Kewajiban", "Hukuman", "Dukkha", "Keberuntungan", "Ujian"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Ajaran Buddha tentang Dukkha sering disalahpahami sebagai pesimis, padahal sebenarnya bersifat...", 
+                a: "Realistis", 
+                ex: "Ajaran Buddha berpandangan realistis memandang sesuatu menurut hakekat sebenarnya.", 
+                o: ["Optimis", "Pesimis", "Realistis", "Khayalan", "Sangat sulit"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Tanha: Sebab Penderitaan",
+        penjelasan: "Jenis-jenis keinginan.",
+        soal: [
+            { 
+                q: "Keinginan untuk menikmati kesenangan hidup indriya disebut...", 
+                a: "Kamma Tanha", 
+                ex: "Kamma tanha: keinginan untuk menikmati kesenangan hidup/nafsu indriya.", 
+                o: ["Bhava Tanha", "Vibhava Tanha", "Kamma Tanha", "Moha Tanha", "Sila Tanha"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Keinginan untuk dilahirkan kembali (misal: ingin lahir di surga) disebut...", 
+                a: "Bhava Tanha", 
+                ex: "Bhava tanha: keinginan untuk dilahirkan kembali (misal: ingin lahir di surga).", 
+                o: ["Kamma Tanha", "Vibhava Tanha", "Bhava Tanha", "Loka Tanha", "Dewa Tanha"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Keinginan untuk memusnahkan diri disebut...", 
+                a: "Vibhava Tanha", 
+                ex: "Vibhava tanha: keinginan untuk memusnahkan diri.", 
+                o: ["Kamma Tanha", "Bhava Tanha", "Vibhava Tanha", "Peta Tanha", "Asura Tanha"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+
+    // BAGIAN 2
+    {
+        materi: "Alam Peta (Setan)",
+        penjelasan: "Alam penderitaan di mana makhluk hidup dengan rasa haus dan lapar yang luar biasa.",
+        soal: [
+            { 
+                q: "Jenis Peta (setan) yang hidupnya sangat bergantung pada dana atau jasa yang dikirimkan oleh sanak keluarganya disebut...", 
+                a: "Paradattupajivika (Beggar Demon)", 
+                ex: "Paradattupajivika adalah jenis setan yang hidup berdasarkan dana dari orang lain.", 
+                o: ["Kalakacinka", "Khupipasika", "Paradattupajivika (Beggar Demon)", "Nijjhamatanhika", "Peta Asura"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Makhluk yang terlahir di alam Peta umumnya memiliki wujud fisik yang menyeramkan. Peta yang berwujud 'Horror Demon' disebut...", 
+                a: "Kalakacinka", 
+                ex: "Kalakacinka adalah Peta yang berwujud menyeramkan (Horror demon).", 
+                o: ["Khupipasika", "Nijjhamatanhika", "Kalakacinka", "Paradattupajivika", "Tiracchana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Mengapa alam Peta dikategorikan sebagai salah satu dari 4 Alam Dugati?", 
+                a: "Karena tidak ada kesempatan untuk berbuat kebajikan", 
+                ex: "Alam Dugati/Menyedihkan adalah alam di mana makhluk tidak memiliki kesempatan untuk berbuat kebajikkan.", 
+                o: ["Karena sangat mewah", "Karena tidak ada makanan", "Karena tidak ada kesempatan untuk berbuat kebajikan", "Karena hanya berisi para dewa", "Karena waktu berjalan sangat cepat"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Alam Niraya (Neraka)",
+        penjelasan: "Alam dengan tingkat penderitaan paling berat akibat karma buruk.",
+        soal: [
+            { 
+                q: "Makhluk yang berdiam di alam Niraya selalu menderita sebagai akibat dari...", 
+                a: "Karma buruknya di masa lampau", 
+                ex: "Sesuai catatan, penderitaan di Niraya adalah akibat karma buruk yang mereka lakukan.", 
+                o: ["Kutukan dewa", "Kesalahan orang tua", "Karma buruknya di masa lampau", "Takdir yang tidak bisa diubah", "Kebetulan semata"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Apa perbedaan utama alam Niraya dengan alam binatang (Tiracchana)?", 
+                a: "Tingkat penderitaan di Niraya jauh lebih konsisten dan berat", 
+                ex: "Niraya adalah tempat penderitaan murni tanpa henti, sedangkan binatang masih memiliki sedikit kesenangan.", 
+                o: ["Niraya tempat yang menyenangkan", "Binatang memiliki kesadaran lebih tinggi", "Tingkat penderitaan di Niraya jauh lebih konsisten dan berat", "Niraya berada di alam dewa", "Binatang tidak memiliki karma"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Berdasarkan catatanmu, alam Niraya termasuk dalam kategori alam...", 
+                a: "Kamaloka (Alam Nafsu Indriya)", 
+                ex: "Kamaloka terdiri dari 4 alam dugati (salah satunya Niraya) dan 7 alam sugati.", 
+                o: ["Rupaloka", "Arupaloka", "Kamaloka (Alam Nafsu Indriya)", "Alam Brahma", "Nibbana"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Alam Dewa (Sugati)",
+        penjelasan: "Alam yang penuh kesenangan namun masih bersifat tidak kekal.",
+        soal: [
+            { 
+                q: "Berdasarkan catatanmu, terdapat 4 sebab kematian Dewa. Salah satunya adalah...", 
+                a: "Habisnya Kebajikan", 
+                ex: "Penyebab kematian dewa: habis usia, habis kebajikan, lupa makan, dan murka/iri hati.", 
+                o: ["Sakit jantung", "Kecelakaan", "Habisnya Kebajikan", "Dibunuh oleh manusia", "Ingin menjadi hewan"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Salah satu penyebab dewa meninggal adalah 'Murka'. Hal ini menunjukkan bahwa dewa masih memiliki...", 
+                a: "Kekotoran batin (Kilesa)", 
+                ex: "Dewa masih terikat nafsu indriya dan bisa memiliki perasaan cemburu atau iri hati.", 
+                o: ["Kekuatan super", "Kekotoran batin (Kilesa)", "Kebaikan tanpa batas", "Ingatan masa lalu", "Kesaktian yang kekal"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Alam dewa memiliki lebih banyak 'Ariya Puggala' karena pada zaman Buddha Gotama banyak umat yang...", 
+                a: "Mendengar khotbah langsung dan lahir di sana", 
+                ex: "Banyak umat Buddha zaman dulu lahir di alam dewa setelah mendengar khotbah, sehingga kemajuan batin di sana lebih cepat.", 
+                o: ["Hanya bermeditasi saja", "Membayar dana yang besar", "Mendengar khotbah langsung dan lahir di sana", "Memiliki tubuh yang besar", "Bisa terbang bebas"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Rupaloka dan Arupaloka",
+        penjelasan: "Alam para Brahma dengan atau tanpa materi.",
+        soal: [
+            { 
+                q: "Makhluk yang tinggal di alam Rupabhumi/Loka disebut sebagai...", 
+                a: "Rupabrahma", 
+                ex: "Mahkluk yang hidup di alam rupaloka disebut Rupabrahma.", 
+                o: ["Arupabrahma", "Manusia", "Rupabrahma", "Asura", "Deva"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Apa perbedaan utama antara alam Rupaloka dan Arupaloka?", 
+                a: "Arupaloka adalah alam tanpa jasmani sama sekali", 
+                ex: "Arupaloka adalah alam para brahma tanpa jasmani (materi).", 
+                o: ["Rupaloka lebih menderita", "Arupaloka penuh dengan makanan", "Arupaloka adalah alam tanpa jasmani sama sekali", "Rupaloka dihuni oleh binatang", "Tidak ada perbedaan"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Berapa total keseluruhan alam kehidupan menurut ajaran Buddha?", 
+                a: "31 Alam", 
+                ex: "Alam kehidupan terdiri dari 31 alam yang dikategorikan dalam Kama, Rupa, dan Arupa Bhumi.", 
+                o: ["7 Alam", "11 Alam", "31 Alam", "33 Alam", "100 Alam"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Karakteristik Agama-Agama di Indonesia",
+        penjelasan: "Ciri khas agama yang diakui pemerintah.",
+        soal: [
+            { 
+                q: "Agama Islam memiliki kitab suci Al-Qur'an dan tempat ibadahnya adalah...", 
+                a: "Masjid", 
+                ex: "Tempat ibadah agama Islam adalah masjid dan mushola.", 
+                o: ["Vihara", "Gereja", "Masjid", "Pura", "Kelenteng"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Tempat ibadah umat Buddha yang juga disebutkan dalam catatanmu selain Vihara adalah...", 
+                a: "Cetiya, Arama, dan Bio", 
+                ex: "Tempat ibadah Buddha: vihara, cetiya, arama, bio, dan kelenteng.", 
+                o: ["Masjid", "Cetiya, Arama, dan Bio", "Sinagoge", "Pura", "Gereja"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Agama yang berasal dari India dan berpegang teguh pada Dharma sebagai ajaran kebenaran adalah...", 
+                a: "Agama Buddha", 
+                ex: "Agama Buddha berasal dari India dan berpegang pada Dharma.", 
+                o: ["Islam", "Kristen", "Agama Buddha", "Khonghucu", "Katolik"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Kamma Pelemah (Uppapilaka Kamma)",
+        penjelasan: "Kamma yang menandingi atau melemahkan hasil kamma sebelumnya.",
+        soal: [
+            { 
+                q: "Seorang yang lahir miskin namun rajin berdana sehingga hidupnya membaik, perbuatan dananya berfungsi sebagai...", 
+                a: "Uppapilaka Kamma (Kamma Pelemah)", 
+                ex: "Uppapilaka kamma berfungsi menandingi atau melemahkan janaka kamma yang buruk.", 
+                o: ["Janaka Kamma", "Upatthambhaka Kamma", "Uppapilaka Kamma (Kamma Pelemah)", "Upaghataka Kamma", "Garuka Kamma"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Fungsi utama dari Uppapilaka Kamma adalah untuk...", 
+                a: "Menentang atau melemahkan hasil Janaka Kamma", 
+                ex: "Kamma ini berfungsi menandingi atau menentang apa yang telah dihasilkan oleh Janaka Kamma.", 
+                o: ["Menciptakan kelahiran baru", "Memperkuat kebahagiaan", "Menentang atau melemahkan hasil Janaka Kamma", "Menghancurkan kamma baik sepenuhnya", "Menjamin masuk surga"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Jika Janaka Kamma seseorang adalah baik, maka Uppapilaka Kamma buruk akan...", 
+                a: "Melemahkan kebahagiaan yang sedang dialami", 
+                ex: "Kamma pelemah bekerja berlawanan dengan kamma penghasil (Janaka).", 
+                o: ["Menambah kebahagiaan", "Melemahkan kebahagiaan yang sedang dialami", "Membuat orang langsung mati", "Menghapus semua dosa", "Membantu orang lain"], 
+                lvl: "L3" 
+            }
+        ]
+    },
+    {
+        materi: "Kamma Penghancur (Upaghataka Kamma)",
+        penjelasan: "Kamma yang memotong atau menghentikan hasil kamma sebelumnya secara tiba-tiba.",
+        soal: [
+            { 
+                q: "Tokoh yang disebutkan dalam catatanmu yang melakukan Kamma Penghancur karena melukai Sang Buddha adalah...", 
+                a: "Dewadatta", 
+                ex: "Dewadatta melukai Buddha, dan perbuatan itu berfungsi sebagai kamma penghancur bagi kesaktiannya.", 
+                o: ["Ananda", "Sariputta", "Dewadatta", "Moggallana", "Angulimala"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Apa yang terjadi pada kesaktian (Abhinna) Dewadatta setelah ia melukai Sang Buddha?", 
+                a: "Hancur/Lenyap karena Upaghataka Kamma", 
+                ex: "Perbuatan melukai Buddha menghancurkan kamma baik/kesaktian yang telah ada sebelumnya.", 
+                o: ["Bertambah kuat", "Tetap sama", "Hancur/Lenyap karena Upaghataka Kamma", "Berubah menjadi ilmu hitam", "Menjadi dewa"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Upaghataka Kamma bekerja dengan cara...", 
+                a: "Menghancurkan kamma yang telah ada", 
+                ex: "Kamma ini berfungsi menghancurkan atau memotong kekuatan kamma yang sedang berjalan.", 
+                o: ["Memperpanjang usia", "Menghancurkan kamma yang telah ada", "Membantu Janaka kamma", "Memberikan rezeki nomplok", "Membentuk tubuh baru"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Dukkha Nirodha (Lenyapnya Penderitaan)",
+        penjelasan: "Kesunyataan Mulia ke-3 tentang Nibbana.",
+        soal: [
+            { 
+                q: "Untuk melenyapkan penderitaan sepenuhnya, seseorang harus mencabut akar penderitaan yaitu...", 
+                a: "Tanha (Keinginan) dan Avijja (Kebodohan)", 
+                ex: "Nirodha tercapai dengan lenyapnya Tanha dan Avijja.", 
+                o: ["Kemiskinan", "Penyakit fisik", "Tanha (Keinginan) dan Avijja (Kebodohan)", "Perasaan sedih", "Keluarga"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Nibbana dapat dicapai saat seseorang masih hidup. Istilah untuk Nibbana saat masih hidup adalah...", 
+                a: "Sa-upadisesa Nibbana", 
+                ex: "Nibbana yang dicapai saat masih memiliki tubuh/jasmani disebut Sa-upadisesa Nibbana.", 
+                o: ["Anupadisesa Nibbana", "Sa-upadisesa Nibbana", "Pari-Nibbana", "Sila Nibbana", "Samadhi Nibbana"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Apa ciri utama dari seseorang yang telah mencapai Nirodha (Nibbana)?", 
+                a: "Bebas dari Lobha, Dosa, dan Moha", 
+                ex: "Nibbana adalah padamnya api keserakahan, kebencian, dan kebodohan batin.", 
+                o: ["Bisa terbang", "Bebas dari Lobha, Dosa, dan Moha", "Menjadi sangat kaya", "Tidak perlu makan", "Hidup selamanya di bumi"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Paticcasamuppada",
+        penjelasan: "Hukum sebab-akibat yang saling bergantungan.",
+        soal: [
+            { 
+                q: "Hukum yang menjelaskan bahwa 'Dengan adanya ini, terjadilah itu' dalam 12 mata rantai disebut...", 
+                a: "Paticcasamuppada", 
+                ex: "Paticcasamuppada adalah hukum sebab-akibat yang saling bergantungan.", 
+                o: ["Tilakkhana", "Paticcasamuppada", "Pancaniyama", "Kamma", "Sila"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Mata rantai pertama yang menyebabkan seluruh rangkaian penderitaan dimulai adalah...", 
+                a: "Avijja (Kebodohan Batin)", 
+                ex: "Paticcasamuppada dimulai dari Avijja (Ketidaktahuan/Kebodohan).", 
+                o: ["Sankhara", "Vinnana", "Avijja (Kebodohan Batin)", "Tanha", "Upadana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Mata rantai 'Tanha' (Keinginan) akan memunculkan mata rantai berikutnya yaitu...", 
+                a: "Upadana (Kemelekatan)", 
+                ex: "Tanha paccaya upadana: karena adanya keinginan, muncullah kemelekatan.", 
+                o: ["Vedana", "Upadana (Kemelekatan)", "Bhava", "Jati", "Jara-marana"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Meditasi (Bhavana)",
+        penjelasan: "Pengembangan batin melalui Samatha dan Vipassana.",
+        soal: [
+            { 
+                q: "Meditasi yang bertujuan untuk mencapai ketenangan batin disebut...", 
+                a: "Samatha Bhavana", 
+                ex: "Samatha Bhavana bertujuan untuk mencapai ketenangan (Samadhi).", 
+                o: ["Vipassana Bhavana", "Samatha Bhavana", "Metta Bhavana", "Sila Bhavana", "Panna Bhavana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Meditasi yang bertujuan untuk mendapatkan pandangan terang tentang hakikat kehidupan disebut...", 
+                a: "Vipassana Bhavana", 
+                ex: "Vipassana Bhavana bertujuan untuk mencapai kebijaksanaan (Panna).", 
+                o: ["Samatha Bhavana", "Vipassana Bhavana", "Anapanasati", "Kasina", "Mantra"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Objek meditasi 'Anapanasati' menggunakan media...", 
+                a: "Keluar masuknya napas", 
+                ex: "Anapanasati adalah meditasi dengan memperhatikan napas.", 
+                o: ["Cahaya lilin", "Warna-warni", "Keluar masuknya napas", "Patung", "Suara lonceng"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Pandangan Buddhis tentang Aborsi",
+        penjelasan: "Etika terkait pelanggaran Sila Pertama.",
+        soal: [
+            { 
+                q: "Mengapa aborsi dianggap pelanggaran Sila Pertama dalam agama Buddha?", 
+                a: "Karena menghancurkan kehidupan yang sudah ada (Vinnana)", 
+                ex: "Aborsi dianggap pembunuhan karena kehidupan dimulai sejak pembuahan (perpaduan sperma, sel telur, dan vinnana).", 
+                o: ["Karena dilarang dokter", "Karena menghancurkan kehidupan yang sudah ada (Vinnana)", "Karena biayanya mahal", "Karena membuat orang tua malu", "Karena alasan kesehatan"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Menurut ajaran Buddha, kehidupan manusia dimulai sejak...", 
+                a: "Pembuahan di rahim (Patisehndi-vinnana)", 
+                ex: "Kehidupan dimulai saat terjadi kesadaran peneris (Patisehndi-vinnana).", 
+                o: ["Bayi lahir", "Bayi bisa menangis", "Pembuahan di rahim (Patisehndi-vinnana)", "Bulan ke-7 kehamilan", "Saat bayi mulai sekolah"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Salah satu faktor terjadinya pembunuhan (termasuk aborsi) adalah 'Vadhaka-citta', yang artinya...", 
+                a: "Adanya niat untuk membunuh", 
+                ex: "Vadhaka-citta adalah pikiran/niat untuk membunuh.", 
+                o: ["Adanya objek makhluk", "Adanya niat untuk membunuh", "Makhluk itu mati", "Adanya usaha", "Adanya alat pembunuh"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Narkoba dan Sila Kelima",
+        penjelasan: "Larangan konsumsi zat yang melemahkan kesadaran.",
+        soal: [
+            { 
+                q: "Narkoba dilarang dalam agama Buddha karena melanggar Sila Kelima yang berbunyi...", 
+                a: "Surameraya majjapamadatthana veramani", 
+                ex: "Sila kelima melarang konsumsi minuman keras dan zat yang menyebabkan lemahnya kesadaran.", 
+                o: ["Panatipata veramani", "Adinnadana veramani", "Kamesumicchacara veramani", "Musavada veramani", "Surameraya majjapamadatthana veramani"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Bahaya utama narkoba menurut pandangan Buddhis adalah...", 
+                a: "Melemahkan kesadaran dan kewaspadaan (Sati)", 
+                ex: "Zat adiktif menghancurkan kesadaran batin yang diperlukan untuk praktik Dhamma.", 
+                o: ["Membuat badan gemuk", "Melemahkan kesadaran dan kewaspadaan (Sati)", "Menghabiskan uang", "Membuat orang sering tidur", "Menimbulkan bau badan"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Mengkonsumsi narkoba dapat memicu pelanggaran sila-sila lainnya karena...", 
+                a: "Hilangnya kontrol diri dan kesadaran", 
+                ex: "Saat kesadaran hilang (mabuk), seseorang mudah melakukan pembunuhan, pencurian, atau asusila.", 
+                o: ["Narkoba itu enak", "Hilangnya kontrol diri dan kesadaran", "Narkoba itu mahal", "Pikiran menjadi sangat cerdas", "Membuat tubuh sangat kuat"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Dana (Kedermawanan)",
+        penjelasan: "Praktik melepas untuk mengurangi keserakahan.",
+        soal: [
+            { 
+                q: "Bentuk dana yang paling tinggi nilainya menurut Sang Buddha adalah...", 
+                a: "Dhamma Dana (Berbagi Ajaran)", 
+                ex: "Sabbadanam dhammadanam jinati: pemberian Dhamma mengalahkan segala bentuk pemberian lainnya.", 
+                o: ["Amisa Dana (Barang)", "Abhaya Dana (Keamanan)", "Dhamma Dana (Berbagi Ajaran)", "Mahanidhana Dana", "Citta Dana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Agar dana berbuah besar, pikiran si pemberi harus bersih pada 3 waktu, yaitu...", 
+                a: "Sebelum, saat memberi, dan sesudah memberi", 
+                ex: "Kualitas dana ditentukan oleh pikiran sebelum, sedang, dan sesudah berdana.", 
+                o: ["Pagi, siang, dan malam", "Sebelum, saat memberi, dan sesudah memberi", "Hanya saat memberi saja", "Saat diingat orang lain", "Saat masuk berita"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Memberikan maaf kepada orang yang menyakiti kita termasuk dalam jenis dana...", 
+                a: "Abhaya Dana (Dana Ketidak-takutan)", 
+                ex: "Abhaya dana adalah memberikan rasa aman atau membebaskan makhluk dari rasa takut/kebencian.", 
+                o: ["Amisa Dana", "Dhamma Dana", "Abhaya Dana (Dana Ketidak-takutan)", "Sila Dana", "Panna Dana"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Hukum Tilakkhana dalam Praktik",
+        penjelasan: "Penerapan konsep ketidakkekalan dalam hidup.",
+        soal: [
+            { 
+                q: "Memahami Anicca (Ketidakkekalan) membantu umat Buddha untuk tidak...", 
+                a: "Melekat (Upadana) pada kesenangan duniawi", 
+                ex: "Pemahaman anicca melatih pelepasan karena tahu segalanya akan berubah.", 
+                o: ["Makan makanan enak", "Melekat (Upadana) pada kesenangan duniawi", "Bekerja mencari uang", "Memiliki keluarga", "Belajar di sekolah"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Anatta mengajarkan bahwa tidak ada 'Aku' yang kekal. Hal ini bertujuan untuk melenyapkan...", 
+                a: "Kesombongan (Mana)", 
+                ex: "Dengan memahami tidak ada inti yang kekal, sifat sombong dan egois akan berkurang.", 
+                o: ["Kasih sayang", "Kecerdasan", "Kesombongan (Mana)", "Ingatan", "Tanggung jawab"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Mengetahui bahwa penderitaan juga bersifat Anicca, maka orang yang sedang tertimpa musibah harus...", 
+                a: "Sabar dan optimis karena penderitaan pun akan berlalu", 
+                ex: "Karena segalanya tidak kekal, maka penderitaan pun pasti akan berubah.", 
+                o: ["Putus asa", "Menyalahkan dewa", "Sabar dan optimis karena penderitaan pun akan berlalu", "Berhenti berbuat baik", "Marah-marah"], 
+                lvl: "L3" 
+            }
+        ]
+    },
+    {
+        materi: "Tripitaka (Kitab Suci)",
+        penjelasan: "Tiga keranjang ajaran Buddha.",
+        soal: [
+            { 
+                q: "Bagian Tripitaka yang berisi tentang peraturan disiplin para Bhikkhu/Bhikkhuni adalah...", 
+                a: "Vinaya Pitaka", 
+                ex: "Vinaya Pitaka berisi aturan disiplin (Patimokkha).", 
+                o: ["Sutta Pitaka", "Abhidhamma Pitaka", "Vinaya Pitaka", "Jataka", "Dhammapada"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Bagian Tripitaka yang berisi khotbah-khotbah Buddha kepada para siswa dan umat adalah...", 
+                a: "Sutta Pitaka", 
+                ex: "Sutta Pitaka berisi kumpulan khotbah Buddha.", 
+                o: ["Vinaya Pitaka", "Abhidhamma Pitaka", "Sutta Pitaka", "Gatha", "Paritta"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Bagian Tripitaka yang berisi tentang filsafat dan psikologi tingkat tinggi disebut...", 
+                a: "Abhidhamma Pitaka", 
+                ex: "Abhidhamma Pitaka berisi ajaran tentang proses batin dan unsur metafisika.", 
+                o: ["Vinaya Pitaka", "Sutta Pitaka", "Abhidhamma Pitaka", "Nidana", "Sutta Nipata"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Dhammapada",
+        penjelasan: "Kumpulan syair populer dalam Khuddaka Nikaya.",
+        soal: [
+            { 
+                q: "Syair Dhammapada bait ke-1 menyatakan bahwa 'Pikiran adalah pembentuk, pikiran adalah...',", 
+                a: "Pemimpin", 
+                ex: "Mano pubbangama dhamma: pikiran adalah pelopor/pemimpin.", 
+                o: ["Pengikut", "Pemimpin", "Musuh", "Bayangan", "Cermin"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Berdasarkan Dhammapada, kebencian tidak akan berakhir jika dibalas dengan kebencian, melainkan dengan...", 
+                a: "Cinta kasih (Metta)", 
+                ex: "Kebencian dibalas kebencian tidak akan berakhir, kebencian berakhir dengan cinta kasih.", 
+                o: ["Kekuatan", "Hukuman", "Cinta kasih (Metta)", "Diam saja", "Melarikan diri"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Dhammapada termasuk ke dalam kelompok kitab...", 
+                a: "Sutta Pitaka (Khuddaka Nikaya)", 
+                ex: "Dhammapada adalah bagian dari Khuddaka Nikaya dalam Sutta Pitaka.", 
+                o: ["Vinaya Pitaka", "Abhidhamma Pitaka", "Sutta Pitaka (Khuddaka Nikaya)", "Veda", "Sutra"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Persembahan di Altar (Amisa Puja)",
+        penjelasan: "Makna simbolik persembahan.",
+        soal: [
+            { 
+                q: "Di altar Buddha terdapat lilin yang melambangkan...", 
+                a: "Penerangan/Cahaya Dharma", 
+                ex: "Lilin melambangkan cahaya Dharma yang mengusir kegelapan batin.", 
+                o: ["Kehidupan yang panas", "Penerangan/Cahaya Dharma", "Keharuman nama", "Ketidakkekalan", "Kesejukan batin"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Bunga yang segar diletakkan di altar, namun lama-kelamaan akan layu. Ini melambangkan...", 
+                a: "Anicca (Ketidakkekalan)", 
+                ex: "Bunga melambangkan ketidakkekalan karena keindahannya bersifat sementara.", 
+                o: ["Keindahan abadi", "Anicca (Ketidakkekalan)", "Keharuman perbuatan", "Konsentrasi", "Cinta kasih"], 
+                lvl: "L2" 
+            },
+            { 
+                q: "Dupa atau hio yang dibakar di altar melambangkan...", 
+                a: "Keharuman nama baik/Sila", 
+                ex: "Wangi dupa melambangkan keharuman nama baik seseorang yang menjalankan sila.", 
+                o: ["Cahaya", "Keharuman nama baik/Sila", "Kekuatan", "Kemarahan", "Suhu tubuh"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Nama-Nama Buddha dan Boddhisatva",
+        penjelasan: "Tokoh-tokoh suci dalam tradisi Buddhis.",
+        soal: [
+            { 
+                q: "Buddha yang akan datang setelah Buddha Gotama adalah Buddha...", 
+                a: "Metteyya", 
+                ex: "Buddha masa depan yang akan muncul adalah Buddha Metteyya.", 
+                o: ["Amitabha", "Metteyya", "Vipassi", "Kassapa", "Dipankara"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Boddhisatva yang melambangkan welas asih dan sering digambarkan bertangan seribu adalah...", 
+                a: "Avalokitesvara (Kwan Im)", 
+                ex: "Avalokitesvara adalah Boddhisatva welas asih.", 
+                o: ["Manjusri", "Avalokitesvara (Kwan Im)", "Ksitigarbha", "Samantabhadra", "Maitreya"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Buddha yang memerintah di 'Barat' atau alam Sukhavati adalah Buddha...", 
+                a: "Amitabha", 
+                ex: "Buddha Amitabha adalah penguasa alam barat Sukhavati.", 
+                o: ["Gotama", "Amitabha", "Vairochana", "Amoghasiddhi", "Bhaisajyaguru"], 
+                lvl: "L2" 
+            }
+        ]
+    },
+    {
+        materi: "Hari Raya Agama Buddha",
+        penjelasan: "Peringatan peristiwa penting.",
+        soal: [
+            { 
+                q: "Hari raya yang memperingati tiga peristiwa penting (Lahir, Menjadi Buddha, Parinibbana) disebut...", 
+                a: "Waisak", 
+                ex: "Waisak memperingati Tri Suci Waisak.", 
+                o: ["Asadha", "Magha Puja", "Kathina", "Waisak", "Ulambana"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Hari raya yang memperingati khotbah pertama Buddha di Taman Rusa Isipatana disebut...", 
+                a: "Asadha", 
+                ex: "Asadha memperingati pembabaran Dhamma pertama kali (Dhammacakkappavattana Sutta).", 
+                o: ["Waisak", "Asadha", "Magha Puja", "Kathina", "Cetiya"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Masa di mana para Bhikkhu menetap di satu tempat selama 3 bulan musim hujan disebut...", 
+                a: "Masa Vassa", 
+                ex: "Vassa adalah masa pelatihan intensif para bhikkhu selama musim hujan.", 
+                o: ["Masa Kathina", "Masa Vassa", "Masa Magha", "Masa Puasa", "Masa Meditasi"], 
+                lvl: "L1" 
+            }
+        ]
+    },
+    {
+        materi: "Praktik Sila dalam Kehidupan Sehari-hari",
+        penjelasan: "Penerapan Pancasila Buddhis.",
+        soal: [
+            { 
+                q: "Seseorang yang tidak mengambil barang milik orang lain yang tidak diberikan berarti menjalankan...", 
+                a: "Sila Kedua (Adinnadana)", 
+                ex: "Sila kedua adalah bertekad melatih diri menghindari pengambilan barang yang tidak diberikan.", 
+                o: ["Sila Pertama", "Sila Kedua (Adinnadana)", "Sila Ketiga", "Sila Keempat", "Sila Kelima"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Menghindari perbuatan asusila atau selingkuh merupakan praktik dari...", 
+                a: "Sila Ketiga (Kamesumicchacara)", 
+                ex: "Sila ketiga mengatur tentang moralitas seksual.", 
+                o: ["Sila Pertama", "Sila Kedua", "Sila Ketiga (Kamesumicchacara)", "Sila Keempat", "Sila Kelima"], 
+                lvl: "L1" 
+            },
+            { 
+                q: "Seorang siswa yang jujur dan tidak menyontek saat ujian sedang mempraktikkan...", 
+                a: "Sila Keempat (Musavada)", 
+                ex: "Sila keempat adalah menghindari ucapan/tindakan bohong/tidak jujur.", 
+                o: ["Sila Pertama", "Sila Kedua", "Sila Ketiga", "Sila Keempat (Musavada)", "Sila Kelima"], 
+                lvl: "L2" 
+            }
+        ]
+    }
+];
+
+let currentStep = 0;
+let score = 0;
+let answered = false;
+let currentSoalObj = null;
+let isStudyMode = true;
+let isStudyHidden = false;
+
+function toggleStudyContent() {
+    isStudyHidden = !isStudyHidden;
+    applyStudyVisibility();
+}
+
+function applyStudyVisibility() {
+    const content = document.getElementById('study-content');
+    const btn = document.getElementById('study-toggle-btn');
+    if (isStudyHidden) {
+        content.style.display = 'none';
+        btn.innerText = 'Tampilkan Materi';
+    } else {
+        content.style.display = 'block';
+        btn.innerText = 'Sembunyikan Materi';
+    }
+}
+
+function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+function initStep() {
+    isStudyMode = true;
+    answered = false;
+    document.getElementById('study-screen').style.display = 'block';
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('ex-box').style.display = 'none';
+    document.getElementById('next-btn').style.visibility = 'hidden';
+
+    const data = bankSoal[currentStep]; // Gunakan array yang sudah utuh
+    document.getElementById('study-title').innerText = `Materi: ${data.materi}`;
+    document.getElementById('study-content').innerText = data.penjelasan;
+    document.getElementById('pos-info').innerText = `Nomor ${currentStep + 1} / ${bankSoal.length}`;
+    
+    currentSoalObj = data.soal[Math.floor(Math.random() * data.soal.length)];
+    
+    applyStudyVisibility();
+}
+
+function startQuestion() {
+    isStudyMode = false;
+    document.getElementById('study-screen').style.display = 'none';
+    document.getElementById('quiz-screen').style.display = 'block';
+    
+    document.getElementById('q-text').innerText = currentSoalObj.q;
+    document.getElementById('lvl-info').innerText = currentSoalObj.lvl;
+    
+    const options = shuffle([...currentSoalObj.o]);
+    const container = document.getElementById('opt-container');
+    container.innerHTML = '';
+    
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(btn, opt);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(btn, choice) {
+    if (answered) return;
+    answered = true;
+    
+    const correct = currentSoalObj.a;
+    const allBtns = document.querySelectorAll('.option');
+    
+    if (choice === correct) {
+        btn.classList.add('correct');
+        score++;
+    } else {
+        btn.classList.add('wrong');
+        allBtns.forEach(b => { if(b.innerText === correct) b.classList.add('correct'); });
+    }
+
+    allBtns.forEach(b => b.disabled = true);
+    
+    document.getElementById('ex-text').innerText = currentSoalObj.ex;
+    document.getElementById('ex-box').style.display = 'block'; 
+    document.getElementById('next-btn').style.visibility = 'visible';
+}
+
+function nextStep() {
+    currentStep++;
+    if (currentStep < bankSoal.length) { // Loop sejumlah total materi (40)
+        document.getElementById('progress-fill').style.width = `${(currentStep / bankSoal.length) * 100}%`;
+        initStep();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('study-screen').style.display = 'none';
+    const res = document.getElementById('result-screen');
+    res.style.display = 'block';
+    const finalVal = (score / bankSoal.length) * 100;
+    document.getElementById('final-score').innerText = finalVal.toFixed(0);
+    
+    let comment = "Teruslah belajar untuk mencapai pemahaman yang lebih baik!";
+    if(finalVal >= 80) comment = "Luar biasa, Halberg! Pemahamanmu sangat matang.";
+    else if(finalVal >= 70) comment = "Bagus, sedikit lagi mencapai kesempurnaan!";
+    document.getElementById('final-comment').innerText = comment;
+}
+
+// Inisialisasi Kuis
+initStep();
+</script>
+</body>
+</html>
